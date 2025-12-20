@@ -15,10 +15,10 @@ interface TaskListProps {
 export const TaskList: React.FC<TaskListProps> = memo(({ tasks, onToggle, onDelete, onEdit }) => {
     return (
         <div 
-            className="flex-1 flex flex-col mt-8 px-1 min-h-[300px]"
-            style={{ paddingBottom: 'calc(10rem + env(safe-area-inset-bottom))' }}
+            className="flex-1 flex flex-col mt-6 sm:mt-8 px-1 min-h-[300px]"
+            style={{ paddingBottom: 'calc(8rem + env(safe-area-inset-bottom))' }}
         >
-            <div className="flex justify-between items-end mb-5 px-1 flex-shrink-0">
+            <div className="flex justify-between items-end mb-4 px-1 flex-shrink-0">
                 <h3 className="text-sm font-bold text-white/50 uppercase tracking-widest">Your Tasks</h3>
             </div>
             

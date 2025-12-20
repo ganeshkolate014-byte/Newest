@@ -81,7 +81,7 @@ export const TaskItem: React.FC<TaskItemProps> = memo(({ task, onToggle, onDelet
         onClick={() => onEdit(task)}
         className={`
             relative z-10 overflow-hidden
-            flex items-center gap-3 sm:gap-5 p-4 sm:p-5 rounded-[1.2rem]
+            flex items-center gap-3.5 sm:gap-5 p-4 sm:p-5 rounded-[1.2rem]
             transition-colors duration-200 cursor-pointer
             ${task.completed 
                 ? 'bg-zinc-900 border border-white/[0.05]' 
@@ -119,14 +119,14 @@ export const TaskItem: React.FC<TaskItemProps> = memo(({ task, onToggle, onDelet
 
         <div className="flex-1 min-w-0 z-10 select-none">
           <h3 className={`
-            text-base sm:text-[17px] font-semibold tracking-tight transition-all duration-300 leading-snug truncate
+            text-[17px] font-semibold tracking-tight transition-all duration-300 leading-snug truncate
             ${task.completed ? 'text-white/30 line-through decoration-white/20' : 'text-white'}
           `}>
             {task.title}
           </h3>
-          <div className="flex items-center gap-2 mt-1 flex-wrap">
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
              <span className={`
-                text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md
+                text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md
                 ${task.completed ? 'text-white/20 bg-white/5' : 'text-blue-200 bg-blue-500/20 border border-blue-500/20'}
              `}>
                 {task.category}
@@ -135,7 +135,7 @@ export const TaskItem: React.FC<TaskItemProps> = memo(({ task, onToggle, onDelet
              {!task.completed && dateDisplay && (
                  <div className="flex items-center gap-1 text-white/50 bg-white/5 px-2 py-0.5 rounded-md border border-white/5">
                     <Calendar size={12} />
-                    <span className="text-[10px] font-bold uppercase tracking-wider">{dateDisplay}</span>
+                    <span className="text-[11px] font-bold uppercase tracking-wider">{dateDisplay}</span>
                  </div>
              )}
 

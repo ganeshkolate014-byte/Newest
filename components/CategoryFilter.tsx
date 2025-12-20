@@ -12,7 +12,7 @@ const FilterPill = memo(({ children, active, onClick }: { children: React.ReactN
   <button 
     onClick={onClick}
     className={`
-        px-4 py-2 sm:px-5 sm:py-2.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap flex-shrink-0 border
+        px-4 py-2.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all whitespace-nowrap flex-shrink-0 border
         ${active 
             ? 'bg-white text-black border-white scale-105 z-10' 
             : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10 hover:text-white hover:border-white/30'}
@@ -24,7 +24,7 @@ const FilterPill = memo(({ children, active, onClick }: { children: React.ReactN
 
 export const CategoryFilter: React.FC<CategoryFilterProps> = memo(({ selected, onSelect }) => {
     return (
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-4 pt-1 px-1 mask-linear-fade">
+        <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-4 pt-1 px-1 mask-linear-fade">
             <FilterPill active={selected === 'All'} onClick={() => onSelect('All')}>All</FilterPill>
             {CATEGORIES.map(cat => (
                 <FilterPill key={cat} active={selected === cat} onClick={() => onSelect(cat)}>

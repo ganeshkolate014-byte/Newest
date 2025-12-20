@@ -43,7 +43,7 @@ const DateScroll = memo(({ selectedDate, onSelect, days, isCustomDate, customDat
             <button
                 type="button"
                 className={`
-                    flex flex-col items-center justify-center w-[56px] h-[68px] rounded-2xl border transition-all duration-200
+                    flex flex-col items-center justify-center w-[56px] h-[72px] rounded-2xl border transition-all duration-200
                     ${isCustomDate 
                         ? 'bg-white text-black border-white scale-100 z-10' 
                         : 'bg-white/[0.05] text-white/40 border-transparent hover:bg-white/[0.1] hover:text-white'}
@@ -51,7 +51,7 @@ const DateScroll = memo(({ selectedDate, onSelect, days, isCustomDate, customDat
             >
                 {isCustomDate && customDateDisplay ? (
                     <>
-                        <span className="text-[9px] font-bold uppercase tracking-wider mb-0.5 opacity-60">
+                        <span className="text-[10px] font-bold uppercase tracking-wider mb-0.5 opacity-60">
                             {customDateDisplay.month}
                         </span>
                         <span className="text-lg font-bold leading-none">
@@ -61,7 +61,7 @@ const DateScroll = memo(({ selectedDate, onSelect, days, isCustomDate, customDat
                 ) : (
                     <>
                         <CalendarIcon size={20} className="mb-1 opacity-80" />
-                        <span className="text-[9px] font-bold uppercase tracking-wider">Pick</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Pick</span>
                     </>
                 )}
             </button>
@@ -76,13 +76,13 @@ const DateScroll = memo(({ selectedDate, onSelect, days, isCustomDate, customDat
                     type="button"
                     onClick={() => onSelect(date.full)}
                     className={`
-                        flex flex-col items-center justify-center min-w-[56px] h-[68px] rounded-2xl border transition-all duration-200 relative overflow-hidden flex-shrink-0
+                        flex flex-col items-center justify-center min-w-[56px] h-[72px] rounded-2xl border transition-all duration-200 relative overflow-hidden flex-shrink-0
                         ${isSelected 
                             ? 'bg-white text-black border-white scale-100 z-10' 
                             : 'bg-white/[0.05] text-white/40 border-transparent hover:bg-white/[0.1]'}
                     `}
                 >
-                    <span className="text-[9px] font-bold uppercase tracking-wider mb-0.5 opacity-60">
+                    <span className="text-[10px] font-bold uppercase tracking-wider mb-0.5 opacity-60">
                         {date.isToday ? 'TDY' : date.dayName}
                     </span>
                     <span className="text-lg font-bold leading-none">
@@ -95,7 +95,7 @@ const DateScroll = memo(({ selectedDate, onSelect, days, isCustomDate, customDat
 ));
 
 const PrioritySelector = memo(({ priority, onSelect }: { priority: Priority, onSelect: (p: Priority) => void }) => (
-    <div className="h-12 bg-white/[0.03] rounded-xl p-1 flex relative border border-white/5">
+    <div className="h-14 bg-white/[0.03] rounded-xl p-1 flex relative border border-white/5">
         {(['low', 'medium', 'high'] as Priority[]).map((p) => {
              const isActive = priority === p;
              const config = priorityConfig[p];
@@ -129,14 +129,14 @@ const PrioritySelector = memo(({ priority, onSelect }: { priority: Priority, onS
 ));
 
 const CategorySelector = memo(({ category, onSelect }: { category: Category, onSelect: (c: Category) => void }) => (
-    <div className="flex flex-wrap gap-2 pt-2">
+    <div className="flex flex-wrap gap-2.5 pt-2">
          {CATEGORIES.map(cat => (
             <button
                 key={cat}
                 type="button"
                 onClick={() => onSelect(cat)}
                 className={`
-                    px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border
+                    px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all border
                     ${category === cat 
                         ? 'bg-white/10 text-white border-white/20' 
                         : 'bg-transparent text-white/20 border-white/5 hover:border-white/10'}
@@ -236,11 +236,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, e
                 <div className="flex justify-between items-center p-6 pb-4">
                     <button 
                         onClick={onClose}
-                        className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all active:scale-95 border border-white/5"
+                        className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all active:scale-95 border border-white/5"
                     >
-                        <X size={18} />
+                        <X size={20} />
                     </button>
-                    <div className="px-4 py-1.5 rounded-full bg-white/5 border border-white/5">
+                    <div className="px-5 py-2 rounded-full bg-white/5 border border-white/5">
                          <span className="text-[11px] font-bold uppercase tracking-widest text-white/60">
                             {editingTask ? 'Edit Task' : 'New Task'}
                          </span>
@@ -264,7 +264,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, e
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             placeholder="Add details (optional)"
-                            className="w-full bg-transparent text-base text-white/50 placeholder-white/10 outline-none border-none p-0"
+                            className="w-full bg-transparent text-[17px] text-white/50 placeholder-white/10 outline-none border-none p-0"
                         />
                     </div>
 
@@ -274,8 +274,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, e
                         style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
                     >
                         <div className="space-y-3">
-                            <label className="text-[10px] font-bold uppercase tracking-widest text-white/30 pl-1 flex items-center gap-2">
-                                <Clock size={12} /> Schedule
+                            <label className="text-[11px] font-bold uppercase tracking-widest text-white/30 pl-1 flex items-center gap-2">
+                                <Clock size={14} /> Schedule
                             </label>
                             
                             <DateScroll 
@@ -289,7 +289,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, e
 
                         <div className="space-y-3 relative">
                              <div className="flex justify-between items-center px-1">
-                                <label className="text-[10px] font-bold uppercase tracking-widest text-white/30">Impact Level</label>
+                                <label className="text-[11px] font-bold uppercase tracking-widest text-white/30">Impact Level</label>
                              </div>
                              
                              <PrioritySelector priority={priority} onSelect={handlePrioritySelect} />

@@ -33,23 +33,23 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = memo(({ stats }
   const streakDays = 5;
 
   return (
-    <GlassCard className="w-full mb-6 !p-0">
-        <div className="relative p-5 sm:p-7 overflow-hidden group">
+    <GlassCard className="w-full mb-5 !p-0">
+        <div className="relative p-6 sm:p-7 overflow-hidden group">
             
             <div className="relative z-10 flex justify-between items-end mb-6 sm:mb-8">
-                <div className="flex flex-col gap-1">
-                    <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-none">
+                <div className="flex flex-col gap-1.5">
+                    <h2 className="text-3xl font-extrabold text-white tracking-tight leading-none">
                         <span className="text-white">Good</span> {timeOfDay}.
                     </h2>
-                    <p className="text-sm font-medium text-white/50">
+                    <p className="text-[13px] font-medium text-white/50">
                         {stats.pending === 0 && stats.total > 0 ? "You're all caught up." : "Let's make it happen."}
                     </p>
                 </div>
 
                 {/* Minimal Percentage Display */}
                 <div className="text-right">
-                    <span className="text-3xl sm:text-4xl font-black text-white tracking-tighter block">{completionRate}%</span>
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">Done</span>
+                    <span className="text-4xl font-black text-white tracking-tighter block">{completionRate}%</span>
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-white/40">Done</span>
                 </div>
             </div>
 
@@ -59,15 +59,15 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = memo(({ stats }
                 {/* Widget 1: Daily Streak */}
                 <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 flex flex-col justify-between relative overflow-hidden transition-colors h-24">
                    <div className="flex items-center gap-2 relative z-10">
-                        <Flame size={14} className="text-orange-400" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-white/50">Streak</span>
+                        <Flame size={16} className="text-orange-400" />
+                        <span className="text-[11px] font-bold uppercase tracking-widest text-white/50">Streak</span>
                    </div>
                    
                    <div className="relative z-10">
                        <span className="text-lg font-bold text-white block flex items-center gap-2">
                            {streakDays} Days
                        </span>
-                       <span className="text-[10px] text-white/40 font-medium block mt-0.5 truncate">
+                       <span className="text-[11px] text-white/40 font-medium block mt-0.5 truncate">
                            Keep the fire burning.
                        </span>
                    </div>
@@ -76,8 +76,8 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = memo(({ stats }
                 {/* Widget 2: Weather */}
                 <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 flex flex-col justify-between relative overflow-hidden transition-colors h-24">
                     <div className="flex items-center gap-2 relative z-10">
-                        <CloudSun size={14} className="text-yellow-400" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-white/50">
+                        <CloudSun size={16} className="text-yellow-400" />
+                        <span className="text-[11px] font-bold uppercase tracking-widest text-white/50">
                             Now
                         </span>
                     </div>
@@ -85,9 +85,9 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = memo(({ stats }
                     <div className="flex items-end justify-between relative z-10">
                        <div>
                            <span className="text-lg font-bold text-white block">24°</span>
-                           <span className="text-[10px] text-white/40 font-medium">Clear Sky</span>
+                           <span className="text-[11px] text-white/40 font-medium">Clear Sky</span>
                        </div>
-                       <Sun size={18} className="text-yellow-400 mb-0.5" />
+                       <Sun size={20} className="text-yellow-400 mb-0.5" />
                     </div>
                 </div>
 
