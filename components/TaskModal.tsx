@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, memo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Clock, Sparkles, Zap, AlertCircle, ArrowUp, Calendar as CalendarIcon } from 'lucide-react';
 import { Task, Category, Priority } from '../types';
@@ -112,7 +112,7 @@ const PrioritySelector = memo(({ priority, onSelect }: { priority: Priority, onS
                         <motion.div
                             layoutId="priority-pill"
                             className={`absolute inset-0 rounded-[9px] shadow-sm ${theme.bg}`}
-                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                            transition={{ type: "tween", ease: [0.32, 0.72, 0, 1], duration: 0.3 }}
                         />
                     )}
                     
@@ -148,7 +148,7 @@ const CategorySelector = memo(({ category, onSelect }: { category: Category, onS
                         <motion.div
                             layoutId="category-pill-modal"
                             className="absolute inset-0 bg-zinc-900 dark:bg-white rounded-xl"
-                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                            transition={{ type: "tween", ease: [0.32, 0.72, 0, 1], duration: 0.3 }}
                         />
                     )}
                     <span className="relative z-10 flex items-center gap-2">
@@ -167,6 +167,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, e
   const [category, setCategory] = useState<Category>('Personal');
   const [priority, setPriority] = useState<Priority>('medium');
   const [selectedDate, setSelectedDate] = useState<string>('');
+  
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const nextDays = useMemo(() => Array.from({ length: 30 }, (_, i) => {
     const d = new Date();
@@ -212,7 +214,20 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, e
       setPriority('medium');
       setSelectedDate(nextDays[0].full);
     }
+    
+    // Reset height on open
+    if(textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+    }
   }, [editingTask, isOpen, nextDays]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+      if (textareaRef.current) {
+          textareaRef.current.style.height = 'auto';
+          textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+      }
+  }, [title, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -230,7 +245,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, e
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
+            transition={{ duration: 0.4, ease: "easeInOut" }}
             className="fixed inset-0 bg-black/20 dark:bg-black/60 backdrop-blur-[2px] z-[60]"
             style={{ willChange: 'opacity' }}
           />
@@ -238,7 +253,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, e
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            transition={{ type: "tween", ease: [0.32, 0.72, 0, 1], duration: 0.5 }}
             className="fixed bottom-0 left-0 right-0 md:top-auto md:left-1/2 md:-translate-x-1/2 md:bottom-6 md:w-[460px] w-full z-[70] flex flex-col justify-end"
             style={{ willChange: 'transform' }}
           >
@@ -266,21 +281,22 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, e
                     <form onSubmit={handleSubmit} className="flex flex-col min-h-full">
                         
                         {/* Main Input Area */}
-                        <div className="px-6 py-4 space-y-4 shrink-0">
+                        <div className="px-5 sm:px-6 py-4 space-y-3 shrink-0">
                             <textarea
+                                ref={textareaRef}
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
                                 placeholder="What needs to be done?"
                                 rows={1}
-                                className="w-full bg-transparent text-[28px] sm:text-3xl font-medium text-zinc-900 dark:text-white placeholder-zinc-300 dark:placeholder-white/20 outline-none border-none p-0 resize-none leading-tight"
-                                style={{ minHeight: '3rem' }}
+                                className="w-full bg-transparent text-[22px] sm:text-3xl font-medium text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-white/40 outline-none border-none p-0 resize-none leading-tight"
+                                style={{ minHeight: '32px' }}
                             />
                             <input
                                 type="text"
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                                 placeholder="Add details (optional)"
-                                className="w-full bg-transparent text-[16px] sm:text-[17px] text-zinc-500 dark:text-white/50 placeholder-zinc-300 dark:placeholder-white/10 outline-none border-none p-0"
+                                className="w-full bg-transparent text-[15px] sm:text-[17px] text-zinc-500 dark:text-white/50 placeholder-zinc-300 dark:placeholder-white/20 outline-none border-none p-0"
                             />
                         </div>
 
