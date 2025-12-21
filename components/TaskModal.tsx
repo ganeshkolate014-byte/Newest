@@ -27,6 +27,29 @@ const priorityConfig = {
     high: { label: 'Critical', icon: <AlertCircle size={14} /> }
 };
 
+// Cached formatter to avoid creating it 30 times on every render
+const weekdayFormatter = new Intl.DateTimeFormat('en-US', { weekday: 'short' });
+
+const DateItem = memo(({ date, isSelected, onSelect }: any) => (
+    <button
+        type="button"
+        onClick={() => onSelect(date.full)}
+        className={`
+            flex flex-col items-center justify-center min-w-[56px] h-[72px] rounded-2xl border transition-all duration-200 relative overflow-hidden flex-shrink-0
+            ${isSelected 
+                ? 'bg-zinc-900 text-white border-zinc-900 dark:bg-white dark:text-black dark:border-white scale-100 z-10' 
+                : 'bg-black/5 text-zinc-400 border-transparent hover:bg-black/10 dark:bg-white/[0.05] dark:text-white/40 dark:hover:bg-white/[0.1]'}
+        `}
+    >
+        <span className="text-[10px] font-bold uppercase tracking-wider mb-0.5 opacity-60">
+            {date.isToday ? 'TDY' : date.dayName}
+        </span>
+        <span className="text-lg font-bold leading-none">
+            {date.dayNum}
+        </span>
+    </button>
+));
+
 const DateScroll = memo(({ selectedDate, onSelect, days, isCustomDate, customDateDisplay }: any) => (
     <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mask-linear-fade px-1">
         {/* Native Picker Button */}
@@ -68,29 +91,14 @@ const DateScroll = memo(({ selectedDate, onSelect, days, isCustomDate, customDat
         </div>
 
         {/* Quick Select List */}
-        {days.map((date: any) => {
-            const isSelected = selectedDate === date.full;
-            return (
-                <button
-                    key={date.full}
-                    type="button"
-                    onClick={() => onSelect(date.full)}
-                    className={`
-                        flex flex-col items-center justify-center min-w-[56px] h-[72px] rounded-2xl border transition-all duration-200 relative overflow-hidden flex-shrink-0
-                        ${isSelected 
-                            ? 'bg-zinc-900 text-white border-zinc-900 dark:bg-white dark:text-black dark:border-white scale-100 z-10' 
-                            : 'bg-black/5 text-zinc-400 border-transparent hover:bg-black/10 dark:bg-white/[0.05] dark:text-white/40 dark:hover:bg-white/[0.1]'}
-                    `}
-                >
-                    <span className="text-[10px] font-bold uppercase tracking-wider mb-0.5 opacity-60">
-                        {date.isToday ? 'TDY' : date.dayName}
-                    </span>
-                    <span className="text-lg font-bold leading-none">
-                        {date.dayNum}
-                    </span>
-                </button>
-            );
-        })}
+        {days.map((date: any) => (
+            <DateItem 
+                key={date.full} 
+                date={date} 
+                isSelected={selectedDate === date.full} 
+                onSelect={onSelect} 
+            />
+        ))}
     </div>
 ));
 
@@ -170,16 +178,22 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, e
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const nextDays = useMemo(() => Array.from({ length: 30 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() + i);
-    return {
-      full: d.toISOString().split('T')[0],
-      dayName: d.toLocaleDateString('en-US', { weekday: 'short' }),
-      dayNum: d.getDate(),
-      isToday: i === 0
-    };
-  }), []);
+  // Optimized Date Generation
+  const nextDays = useMemo(() => {
+    const days = [];
+    const today = new Date();
+    for (let i = 0; i < 30; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
+        days.push({
+            full: d.toISOString().split('T')[0],
+            dayName: i === 0 ? 'TDY' : weekdayFormatter.format(d),
+            dayNum: d.getDate(),
+            isToday: i === 0
+        });
+    }
+    return days;
+  }, []);
 
   const isCustomDate = useMemo(() => {
       if (!selectedDate) return false;
@@ -201,29 +215,39 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, e
   const handleCategorySelect = useCallback((c: Category) => setCategory(c), []);
 
   useEffect(() => {
-    if (editingTask) {
-      setTitle(editingTask.title);
-      setDescription(editingTask.description);
-      setCategory(editingTask.category);
-      setPriority(editingTask.priority);
-      setSelectedDate(editingTask.dueDate || nextDays[0].full);
-    } else {
-      setTitle('');
-      setDescription('');
-      setCategory('Personal');
-      setPriority('medium');
-      setSelectedDate(nextDays[0].full);
-    }
-    
-    // Reset height on open
-    if(textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
+    if (isOpen) {
+        if (editingTask) {
+          setTitle(editingTask.title);
+          setDescription(editingTask.description);
+          setCategory(editingTask.category);
+          setPriority(editingTask.priority);
+          setSelectedDate(editingTask.dueDate || nextDays[0].full);
+        } else {
+          // Reset to defaults
+          setTitle('');
+          setDescription('');
+          setCategory('Personal');
+          setPriority('medium');
+          setSelectedDate(nextDays[0].full);
+        }
+        
+        // Defer height calculation to next frame to prevent layout thrashing on animation start
+        requestAnimationFrame(() => {
+            if(textareaRef.current) {
+                textareaRef.current.style.height = 'auto';
+                // Only set if content exists to avoid jump
+                if (editingTask || title) {
+                     textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+                }
+            }
+        });
     }
   }, [editingTask, isOpen, nextDays]);
 
-  // Auto-resize textarea
+  // Auto-resize textarea with debounce or RAF protection
   useEffect(() => {
-      if (textareaRef.current) {
+      if (textareaRef.current && isOpen) {
+          // We can just set this directly for typing as it doesn't happen on mount
           textareaRef.current.style.height = 'auto';
           textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
       }
