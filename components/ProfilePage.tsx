@@ -1,8 +1,8 @@
+
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Moon, Settings, LogOut, User as UserIcon, Camera, ChevronRight, Loader2 } from 'lucide-react';
-import { User } from 'firebase/auth';
-import { uploadUserAvatar } from '../utils/firebase';
+import { User, uploadUserAvatar } from '../utils/firebase';
 
 interface ProfilePageProps {
   isOpen: boolean;

@@ -17,7 +17,16 @@ export interface Task {
   notificationSent?: boolean;       // For 5-min warning
   overdueNotificationSent?: boolean; // For "Time Expired" alert
   createdAt: number;
-  userId?: string; // ID of the user who owns this task
+  userId?: string; // Owner ID
+}
+
+export interface ChatMessage {
+  id: string;
+  text: string;
+  senderId: string;
+  senderName: string;
+  senderPhoto?: string;
+  createdAt: number;
 }
 
 export interface AppState {

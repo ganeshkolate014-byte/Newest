@@ -1,6 +1,7 @@
+
 // @ts-ignore
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot, query, where, getDocs, writeBatch } from "firebase/firestore";
+import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot, query, where, getDocs, writeBatch, orderBy, limit, addDoc } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { 
   getAuth, 
@@ -12,9 +13,9 @@ import {
   signOut,
   onAuthStateChanged,
   updateProfile,
-  User
+  type User
 } from "firebase/auth";
-import { Task } from "../types";
+import { Task, ChatMessage } from "../types";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBvJr8s7PoGlrkdGLfZeKHhLrjYbBFz7KE",
@@ -35,13 +36,14 @@ const googleProvider = new GoogleAuthProvider();
 // --- Firestore Helpers ---
 
 const TASKS_COLLECTION = 'todos'; 
+const MESSAGES_COLLECTION = 'messages';
 
-export const subscribeToTasks = (userId: string, onUpdate: (tasks: Task[]) => void) => {
-    if (!userId) return () => {};
+export const subscribeToTasks = (user: User, onUpdate: (tasks: Task[]) => void) => {
+    if (!user) return () => {};
 
     const q = query(
         collection(db, TASKS_COLLECTION),
-        where("userId", "==", userId)
+        where("userId", "==", user.uid)
     );
 
     return onSnapshot(q, (snapshot) => {
@@ -59,12 +61,12 @@ export const subscribeToTasks = (userId: string, onUpdate: (tasks: Task[]) => vo
     });
 };
 
-export const addTaskToCloud = async (userId: string, task: Task) => {
-    if (!userId) return;
+export const addTaskToCloud = async (user: User, task: Task) => {
+    if (!user) return;
     try {
         await setDoc(doc(db, TASKS_COLLECTION, task.id), {
             ...task,
-            userId: userId
+            userId: user.uid
         });
     } catch (e) {
         console.error("Error adding task to cloud:", e);
@@ -91,7 +93,6 @@ export const deleteTaskFromCloud = async (taskId: string) => {
 export const batchUploadTasks = async (userId: string, tasks: Task[]) => {
     if (!userId || tasks.length === 0) return;
     
-    // Process in chunks of 500 (Firestore batch limit)
     const chunkSize = 500;
     for (let i = 0; i < tasks.length; i += chunkSize) {
         const chunk = tasks.slice(i, i + chunkSize);
@@ -99,16 +100,54 @@ export const batchUploadTasks = async (userId: string, tasks: Task[]) => {
         
         chunk.forEach(task => {
             const docRef = doc(db, TASKS_COLLECTION, task.id);
-            // Ensure userId is correctly set for the authenticated user
-            batch.set(docRef, { ...task, userId }, { merge: true });
+            batch.set(docRef, { 
+                ...task, 
+                userId
+            }, { merge: true });
         });
 
         try {
             await batch.commit();
-            console.log(`Uploaded batch of ${chunk.length} tasks.`);
         } catch (e) {
             console.error("Batch upload failed:", e);
         }
+    }
+};
+
+// --- Chat Helpers ---
+
+export const subscribeToChat = (onUpdate: (messages: ChatMessage[]) => void) => {
+    const q = query(
+        collection(db, MESSAGES_COLLECTION),
+        orderBy("createdAt", "asc"),
+        limit(100)
+    );
+
+    return onSnapshot(q, (snapshot) => {
+        const messages = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return { ...data, id: doc.id } as ChatMessage;
+        });
+        onUpdate(messages);
+    }, (error) => {
+        console.error("Chat subscription error:", error);
+    });
+};
+
+export const sendMessage = async (text: string, user: User) => {
+    if (!user || !text.trim()) return;
+
+    try {
+        await addDoc(collection(db, MESSAGES_COLLECTION), {
+            text: text.trim(),
+            senderId: user.uid,
+            senderName: user.displayName || 'Anonymous',
+            senderPhoto: user.photoURL || null,
+            createdAt: Date.now()
+        });
+    } catch (e) {
+        console.error("Error sending message:", e);
+        throw e;
     }
 };
 
@@ -157,6 +196,18 @@ export const logoutUser = async () => {
     await signOut(auth);
 };
 
+export const observeAuthState = (callback: (user: User | null) => void) => {
+    return onAuthStateChanged(auth, callback);
+};
+
+export const updateUserProfileName = async (name: string) => {
+    if (auth.currentUser) {
+        await updateProfile(auth.currentUser, { displayName: name });
+        await auth.currentUser.reload();
+        return auth.currentUser;
+    }
+};
+
 // Helper to generate SHA-1 signature for Cloudinary
 async function sha1(str: string): Promise<string> {
     const enc = new TextEncoder();
@@ -171,11 +222,6 @@ export const uploadUserAvatar = async (file: File) => {
     const apiKey = "678265544699348";
     const apiSecret = "8UhTDh2LLHYnwwrcLvYTDa-SQVc";
     
-    // Cloudinary Signature Generation:
-    // Parameters must be sorted alphabetically.
-    // We are sending 'timestamp' and 'api_key' in body, but only 'timestamp' is part of the string to sign (besides eager/public_id if we used them).
-    // String format: key=value&key=value... + secret
-    
     const timestamp = Math.round(new Date().getTime() / 1000);
     const signatureStr = `timestamp=${timestamp}${apiSecret}`;
     const signature = await sha1(signatureStr);
@@ -186,7 +232,6 @@ export const uploadUserAvatar = async (file: File) => {
     formData.append("timestamp", timestamp.toString());
     formData.append("signature", signature);
     
-    // Use the auto-upload URL
     const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
         method: "POST",
         body: formData
@@ -200,7 +245,6 @@ export const uploadUserAvatar = async (file: File) => {
     const data = await response.json();
     const photoURL = data.secure_url;
     
-    // If user is logged in, update Firebase Auth profile
     if (auth.currentUser) {
         await updateProfile(auth.currentUser, { photoURL });
     }
@@ -208,4 +252,5 @@ export const uploadUserAvatar = async (file: File) => {
     return photoURL;
 };
 
+export type { User };
 export { db, auth, storage };

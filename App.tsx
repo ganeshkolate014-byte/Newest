@@ -10,8 +10,7 @@ import { sendLocalNotification, ensureServiceWorker } from './utils/notification
 import { ToastContainer, ToastMessage, ToastType } from './components/Toast';
 import { BottomDock } from './components/BottomDock';
 import { motion, Variants, AnimatePresence } from 'framer-motion';
-import { subscribeToTasks, addTaskToCloud, updateTaskInCloud, deleteTaskFromCloud, batchUploadTasks, auth, logoutUser, reloadUser } from './utils/firebase';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { subscribeToTasks, addTaskToCloud, updateTaskInCloud, deleteTaskFromCloud, batchUploadTasks, auth, logoutUser, reloadUser, observeAuthState, User } from './utils/firebase';
 import { LoginScreen } from './components/LoginScreen';
 import { ProfilePage } from './components/ProfilePage';
 import { VerificationScreen } from './components/VerificationScreen';
@@ -84,25 +83,20 @@ const getItemVariants = (type: AnimationType): Variants => {
 };
 
 export const App: React.FC = () => {
-  // Auth State
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [isGuest, setIsGuest] = useState(false);
-
-  // Guest Profile State (Local Storage)
   const [guestPhoto, setGuestPhoto] = useState<string | undefined>(() => {
     if (typeof window !== 'undefined') return localStorage.getItem('liquid_guest_photo') || undefined;
     return undefined;
   });
 
-  // App State - Local Storage Initializer (Kept for Instant Load fallback)
   const [tasks, setTasks] = useState<Task[]>(() => {
     if (typeof window !== 'undefined') {
         try {
             const saved = localStorage.getItem('liquid_tasks');
             return saved ? JSON.parse(saved) : [];
         } catch (e) {
-            console.error("Failed to load tasks from local storage", e);
             return [];
         }
     }
@@ -118,7 +112,6 @@ export const App: React.FC = () => {
     return true;
   });
 
-  // Settings State
   const [animationType, setAnimationType] = useState<AnimationType>(() => {
       const saved = localStorage.getItem('liquid_animation');
       return (saved as AnimationType) || 'flow';
@@ -134,7 +127,6 @@ export const App: React.FC = () => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  // Computed Variants based on Settings
   const itemVariants = useMemo(() => getItemVariants(animationType), [animationType]);
   const containerVariants = useMemo(() => getContainerVariants(), []);
 
@@ -147,33 +139,21 @@ export const App: React.FC = () => {
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
 
-  // Initialize Service Worker
-  useEffect(() => {
-      ensureServiceWorker();
-  }, []);
+  useEffect(() => { ensureServiceWorker(); }, []);
 
-  // --- AUTH LISTENER & MIGRATION LOGIC ---
   useEffect(() => {
-      const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      const unsubscribe = observeAuthState(async (currentUser) => {
           if (currentUser) {
-              // MIGRATION: Check for local tasks that belong to Guest (no userId or mismatch)
               const localTasksString = localStorage.getItem('liquid_tasks');
               if (localTasksString) {
                   try {
                       const localTasks: Task[] = JSON.parse(localTasksString);
-                      // Tasks that don't have this user's ID are considered guest/local tasks
                       const tasksToMigrate = localTasks.filter(t => t.userId !== currentUser.uid);
-                      
                       if (tasksToMigrate.length > 0) {
-                          console.log(`Migrating ${tasksToMigrate.length} guest tasks to cloud...`);
                           await batchUploadTasks(currentUser.uid, tasksToMigrate);
                       }
-                  } catch (e) {
-                      console.error("Migration failed:", e);
-                  }
+                  } catch (e) { console.error(e); }
               }
-
-              // Create a fresh user object to ensure state updates if properties change (like emailVerified)
               setUser(currentUser ? { ...currentUser } : null);
               setIsGuest(false);
           } else {
@@ -184,47 +164,41 @@ export const App: React.FC = () => {
       return () => unsubscribe();
   }, []);
 
-  // --- FIRESTORE SYNC ---
   useEffect(() => {
-      // Logic: If user is logged in, sync with Firestore.
-      // If Guest, stay on local storage (handled by other effect).
-      // Also require email verification before syncing if not guest
       if (!user || (!user.emailVerified && !isGuest)) return;
-
-      // When switching to a user, rely on Firestore as source of truth.
-      // We don't clear tasks immediately to avoid flash, but the subscription will overwrite them.
-      
-      const unsubscribe = subscribeToTasks(user.uid, (cloudTasks) => {
+      const unsubscribe = subscribeToTasks(user, (cloudTasks) => {
           setTasks(cloudTasks);
-          // Update local cache so it's available if they refresh offline
           localStorage.setItem('liquid_tasks', JSON.stringify(cloudTasks));
       });
       return () => unsubscribe();
   }, [user]);
 
-  // Persist Settings
   useEffect(() => localStorage.setItem('liquid_haptics', String(hapticsEnabled)), [hapticsEnabled]);
   useEffect(() => localStorage.setItem('liquid_sounds', String(soundsEnabled)), [soundsEnabled]);
+  useEffect(() => localStorage.setItem('liquid_tasks', JSON.stringify(tasks)), [tasks]);
 
-  // Save tasks to local storage whenever they change (Critical for Guest Mode)
-  useEffect(() => {
-      // Only persist to local storage if we are in Guest mode OR as a cache for Auth user.
-      localStorage.setItem('liquid_tasks', JSON.stringify(tasks));
-  }, [tasks]);
-
-  // DAILY CHECK & STREAK LOGIC
   useEffect(() => {
     const todayStr = new Date().toISOString().split('T')[0];
     const lastCheckStr = localStorage.getItem('liquid_last_daily_check');
     const savedStreak = localStorage.getItem('liquid_streak_local');
     let currentStreak = savedStreak ? parseInt(savedStreak, 10) : 0;
-    if (lastCheckStr !== todayStr) {
-       localStorage.setItem('liquid_last_daily_check', todayStr);
-    }
+    if (lastCheckStr !== todayStr) localStorage.setItem('liquid_last_daily_check', todayStr);
     setStreak(currentStreak);
   }, []); 
 
-  // DEADLINE NOTIFICATION LOGIC
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isDark) {
+        root.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#000000');
+    } else {
+        root.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#f2f2f7');
+    }
+  }, [isDark]);
+
   useEffect(() => {
     const checkDeadlines = () => {
       const now = new Date();
@@ -252,36 +226,18 @@ export const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [tasks]);
 
-  // THEME LOGIC
-  useEffect(() => {
-    const root = document.documentElement;
-    if (isDark) {
-        root.classList.add('dark');
-        localStorage.setItem('theme', 'dark');
-        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#000000');
-    } else {
-        root.classList.remove('dark');
-        localStorage.setItem('theme', 'light');
-        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#f2f2f7');
-    }
-  }, [isDark]);
-
   const toggleTheme = useCallback(() => setIsDark(prev => !prev), []);
 
   const handleLogout = useCallback(async () => {
       setIsProfileOpen(false);
       await new Promise(resolve => setTimeout(resolve, 300));
-
       if (user) await logoutUser();
-      
       setIsGuest(false);
       setUser(null);
       setTasks([]);
       localStorage.removeItem('liquid_tasks');
-      
       const savedAnim = localStorage.getItem('liquid_animation') as AnimationType;
       if (savedAnim) setAnimationType(savedAnim);
-
   }, [user]);
 
   const handleUserUpdate = useCallback(async () => {
@@ -297,8 +253,7 @@ export const App: React.FC = () => {
   }, []);
 
   const filteredTasks = useMemo(() => {
-    return tasks
-      .filter(t => {
+    return tasks.filter(t => {
         const matchesSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesCategory = filterCategory === 'All' || t.category === filterCategory;
         return matchesSearch && matchesCategory;
@@ -315,16 +270,11 @@ export const App: React.FC = () => {
 
   const toggleTask = useCallback((id: string) => {
     if (hapticsEnabled && navigator.vibrate) navigator.vibrate(10);
-    
-    // Optimistic Update
     setTasks(prevTasks => {
         const task = prevTasks.find(t => t.id === id);
         if (task) {
             const newState = !task.completed;
-            // Only update cloud if authenticated
-            if (user) {
-                updateTaskInCloud(id, { completed: newState });
-            }
+            if (user) updateTaskInCloud(id, { completed: newState });
             return prevTasks.map(t => t.id === id ? { ...t, completed: newState } : t);
         }
         return prevTasks;
@@ -333,31 +283,19 @@ export const App: React.FC = () => {
 
   const deleteTask = useCallback((id: string) => {
     if (hapticsEnabled && navigator.vibrate) navigator.vibrate(20);
-    
     setTasks(prevTasks => prevTasks.filter(t => t.id !== id));
-    
-    // Only delete from cloud if authenticated
-    if (user) {
-        deleteTaskFromCloud(id);
-    }
-    
+    if (user) deleteTaskFromCloud(id);
     addToast("Deleted", "Task removed successfully", "info");
   }, [addToast, hapticsEnabled, user]);
 
   const handleSave = useCallback((taskData: Partial<Task>) => {
     if (hapticsEnabled && navigator.vibrate) navigator.vibrate(10);
-    
     if (editingTask) {
-        // Edit Task
         const updatedTask = { ...editingTask, ...taskData };
         setTasks(prevTasks => prevTasks.map(t => t.id === editingTask.id ? updatedTask : t));
         addToast('Task Updated', `"${taskData.title}" has been saved.`, 'success');
-        
-        if (user) {
-            updateTaskInCloud(editingTask.id, taskData);
-        }
+        if (user) updateTaskInCloud(editingTask.id, taskData);
     } else {
-        // Create Task
         const newTask: Task = {
             id: crypto.randomUUID(),
             title: taskData.title || '',
@@ -368,15 +306,12 @@ export const App: React.FC = () => {
             dueDate: taskData.dueDate,
             dueTime: taskData.dueTime,
             createdAt: Date.now(),
-            userId: user ? user.uid : undefined // Attach User ID if logged in
+            userId: user ? user.uid : undefined
         };
-        
+
         setTasks(prevTasks => [newTask, ...prevTasks]);
         addToast('Task Created', `"${taskData.title}" added to list.`, 'success');
-        
-        if (user) {
-            addTaskToCloud(user.uid, newTask);
-        }
+        if (user) addTaskToCloud(user, newTask);
     }
     setEditingTask(null);
     setIsModalOpen(false);
@@ -388,13 +323,10 @@ export const App: React.FC = () => {
     setIsModalOpen(true);
   }, [hapticsEnabled]);
 
-  // --- RENDER LOGIC ---
-
   return (
     <>
       <ToastContainer toasts={toasts} removeToast={removeToast} />
       
-      {/* Profile Page Overlay */}
       <ProfilePage 
         isOpen={isProfileOpen} 
         onClose={() => setIsProfileOpen(false)}
@@ -437,15 +369,13 @@ export const App: React.FC = () => {
                 key="verification" 
                 user={user} 
                 onVerified={() => {
-                   // Force a local update to immediately show dashboard
                    setUser({ ...user, emailVerified: true });
-                   // Also trigger a real reload to sync state
                    reloadUser(); 
                 }}
             />
         ) : (
             <motion.main 
-                key="dashboard"
+                key="main-app"
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
@@ -459,28 +389,28 @@ export const App: React.FC = () => {
                         toggleTheme={toggleTheme} 
                         onOpenProfile={() => setIsProfileOpen(true)}
                         userPhoto={user?.photoURL || guestPhoto}
-                        userInitial={user?.email?.[0] || 'G'}
+                        userInitial={user?.displayName?.[0] || user?.email?.[0] || 'G'}
                     />
                 </motion.div>
 
                 <motion.div variants={itemVariants} className="my-6">
-                   <DynamicDashboard stats={stats} streak={streak} isDark={isDark} />
+                    <DynamicDashboard stats={stats} streak={streak} isDark={isDark} />
                 </motion.div>
 
                 <motion.div variants={itemVariants} className="space-y-4 mb-6">
-                  <SearchBar value={searchQuery} onChange={setSearchQuery} />
-                  <CategoryFilter selected={filterCategory} onSelect={setFilterCategory} />
+                    <SearchBar value={searchQuery} onChange={setSearchQuery} />
+                    <CategoryFilter selected={filterCategory} onSelect={setFilterCategory} />
                 </motion.div>
 
                 <motion.div variants={itemVariants} className="flex-1">
                     <TaskList 
-                      tasks={filteredTasks} 
-                      onToggle={toggleTask} 
-                      onDelete={deleteTask}
-                      onEdit={(task) => {
-                          setEditingTask(task);
-                          setIsModalOpen(true);
-                      }}
+                        tasks={filteredTasks} 
+                        onToggle={toggleTask} 
+                        onDelete={deleteTask}
+                        onEdit={(task) => {
+                            setEditingTask(task);
+                            setIsModalOpen(true);
+                        }}
                     />
                 </motion.div>
 
@@ -510,6 +440,9 @@ export const App: React.FC = () => {
                 <BottomDock 
                     onAddTask={handleAddTask} 
                     onOpenSettings={() => setIsSettingsOpen(true)}
+                    onOpenProfile={() => setIsProfileOpen(true)}
+                    userPhoto={user?.photoURL || guestPhoto}
+                    userInitial={user?.displayName?.[0] || user?.email?.[0] || 'G'}
                 />
             </motion.main>
         )}

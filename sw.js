@@ -41,7 +41,8 @@ self.addEventListener("fetch", (event) => {
   if (url.hostname.includes('esm.sh') || 
       url.hostname.includes('fonts.googleapis.com') || 
       url.hostname.includes('fonts.gstatic.com') ||
-      url.hostname.includes('cdn.tailwindcss.com')) {
+      url.hostname.includes('cdn.tailwindcss.com') ||
+      url.hostname.includes('res.cloudinary.com')) {
       
     event.respondWith(
       caches.open(CACHE_NAME).then((cache) => {

@@ -12,12 +12,6 @@ interface TaskModalProps {
   editingTask: Task | null;
 }
 
-const PRIORITY_COLORS = {
-    low: 'bg-blue-500',
-    medium: 'bg-amber-400',
-    high: 'bg-rose-500'
-};
-
 const weekdayFormatter = new Intl.DateTimeFormat('en-US', { weekday: 'short' });
 
 // --- Sub Components ---
@@ -211,7 +205,6 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, e
     }
   }, [editingTask, isOpen, nextDays]);
 
-  // Textarea Auto-grow
   useEffect(() => {
       if (textareaRef.current && isOpen) {
           textareaRef.current.style.height = 'auto';
@@ -222,13 +215,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, e
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
+    
     onSave({ 
       title, 
       description, 
       category, 
       priority, 
       dueDate: selectedDate,
-      dueTime: selectedTime
+      dueTime: selectedTime,
     });
     onClose();
   };
@@ -259,7 +253,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, e
                     <div className="flex-1 overflow-y-auto custom-scrollbar">
                         <form onSubmit={handleSubmit} className="flex flex-col min-h-full">
                             
-                            {/* Input Section - Clean & Large */}
+                            {/* Input Section */}
                             <div className="px-8 pt-6 pb-8 bg-white dark:bg-[#1c1c1e] rounded-b-[2.5rem] shadow-sm z-10 space-y-4">
                                 <div className="flex justify-between items-start">
                                     <textarea
@@ -274,7 +268,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, e
                                     <button 
                                         type="button" 
                                         onClick={onClose}
-                                        className="bg-zinc-100 dark:bg-zinc-800 p-2 rounded-full text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"
+                                        className="bg-zinc-100 dark:bg-zinc-800 p-2 rounded-full text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors flex-shrink-0 ml-4"
                                     >
                                         <X size={20} />
                                     </button>
@@ -307,7 +301,6 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, e
 
                                 {/* Context Grid */}
                                 <div className="grid grid-cols-5 gap-4">
-                                    {/* Time - Spans 2 cols */}
                                     <div className="col-span-2 space-y-3">
                                         <div className="flex items-center gap-2 text-zinc-400 dark:text-zinc-600 px-1">
                                             <Clock size={14} />
@@ -326,7 +319,6 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, e
                                         </div>
                                     </div>
 
-                                    {/* Priority - Spans 3 cols */}
                                     <div className="col-span-3 space-y-3">
                                         <div className="flex items-center gap-2 text-zinc-400 dark:text-zinc-600 px-1">
                                             <Flag size={14} />
@@ -336,7 +328,6 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, e
                                     </div>
                                 </div>
 
-                                {/* Category Section */}
                                 <div className="space-y-3">
                                     <div className="flex items-center gap-2 text-zinc-400 dark:text-zinc-600 px-1">
                                         <Hash size={14} />
@@ -353,7 +344,6 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, e
                                     </LiquidButton>
                                 </div>
 
-                                {/* Safety Padding for Home Bar */}
                                 <div className="h-6" />
                             </div>
                         </form>

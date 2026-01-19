@@ -1,8 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, RefreshCw, LogOut, CheckCircle, Send, ShieldCheck, ChevronRight } from 'lucide-react';
-import { User } from 'firebase/auth';
-import { reloadUser, sendVerificationEmailToUser, logoutUser } from '../utils/firebase';
+import { User, reloadUser, sendVerificationEmailToUser, logoutUser } from '../utils/firebase';
 
 interface VerificationScreenProps {
   user: User;

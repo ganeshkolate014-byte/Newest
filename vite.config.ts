@@ -8,7 +8,8 @@ export default defineConfig({
     viteStaticCopy({
       targets: [
         { src: 'sw.js', dest: '' },
-        { src: 'metadata.json', dest: '' }
+        { src: 'metadata.json', dest: '' },
+        { src: 'manifest.json', dest: '' }
       ]
     })
   ],
