@@ -1,6 +1,6 @@
 {
-  "name": "LiquidGlass Todo",
-  "short_name": "LiquidGlass",
+  "name": "To-do",
+  "short_name": "To-do",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",
